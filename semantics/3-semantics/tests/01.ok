@@ -7,12 +7,15 @@ begin
   read(a);
   vanoszto := false;
   i := 2;
+  for i := true to 10 do
+    a := 3;
+  done
   while not vanoszto and i < a do
     if a mod i = 0 then
       vanoszto := true;
       oszto := i;
     endif
-    i := i++;
+    i := i+1;
   done
   if vanoszto then
     write(vanoszto);

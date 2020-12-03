@@ -31,13 +31,14 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_TO
+%token T_FOR
 
 %left T_OR T_AND
 %left T_EQ
 %left T_LESS T_GR
 %left T_ADD T_SUB
 %left T_MUL T_DIV T_MOD
-%left T_INC T_DEC
 %nonassoc T_NOT
 
 %start program
@@ -201,6 +202,32 @@ loop:
 		   error( ss.str().c_str() );
 		}
         delete $2;
+    }
+|
+    T_FOR T_ID T_ASSIGN expression T_TO expression T_DO statements T_DONE
+    {
+        // tasks to check: variable id declared, with an integer type, both <expr> has an integer type
+        if( symbol_table.count(*$2) == 0 )
+		{
+			std::stringstream ss;
+			ss << "Undeclared variable: " << *$2 << std::endl;
+			error( ss.str().c_str() );
+		}
+		if(symbol_table[*$2].decl_type != integer)
+		{
+		   std::stringstream ss;
+		   ss << "Should be integer" << std::endl;
+		   error( ss.str().c_str() );
+		}
+        if(*$4 != integer || *$6 != integer)
+		{
+		   std::stringstream ss;
+		   ss << "loop range should be integer" << std::endl;
+		   error( ss.str().c_str() );
+		}
+        delete $2;
+        delete $4;
+        delete $6;
     }
 ;
 
@@ -378,23 +405,5 @@ expression:
     {
 		$$ = new type(*$2);
         delete $2;
-    }
-|
-    T_ID T_INC
-    {
-        if ( symbol_table.count(*$1) == 0 )
-		{
-			std::stringstream ss;
-			ss << "Undeclared variable: " << *$1 << std::endl;
-			error( ss.str().c_str() );
-		}
-        if(symbol_table[*$1].decl_type != integer)
-		{
-		   std::stringstream ss;
-		   ss << "Non-integer values can't be incremented" << std::endl;
-		   error( ss.str().c_str() );
-		}
-        $$ = new type(integer);
-        delete $1;
     }
 ;

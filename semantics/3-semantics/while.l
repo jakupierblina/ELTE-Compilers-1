@@ -42,9 +42,8 @@ div         return Parser::T_DIV;
 mod         return Parser::T_MOD;
 "("         return Parser::T_OPEN;
 ")"         return Parser::T_CLOSE;
-"++"        return Parser::T_INC;
-"--"        return Parser::T_DEC;
-
+to          return Parser::T_TO;
+for         return Parser::T_FOR;
 
 {DIGIT}+	return Parser::T_NUM;
 true        return Parser::T_TRUE;
