@@ -15,7 +15,7 @@ LETTER      [a-zA-Z]
 program     return Parser::T_PROGRAM;
 begin       return Parser::T_BEGIN;
 end         return Parser::T_END;
-integer     return Parser::T_INTEGER; 
+integer     return Parser::T_INTEGER;
 boolean     return Parser::T_BOOLEAN;
 skip        return Parser::T_SKIP;
 if          return Parser::T_IF;
@@ -38,10 +38,13 @@ write       return Parser::T_WRITE;
 and         return Parser::T_AND;
 or          return Parser::T_OR;
 not         return Parser::T_NOT;
-div         return Parser::T_DIV; 
+div         return Parser::T_DIV;
 mod         return Parser::T_MOD;
 "("         return Parser::T_OPEN;
 ")"         return Parser::T_CLOSE;
+"++"        return Parser::T_INC;
+"--"        return Parser::T_DEC;
+
 
 {DIGIT}+	return Parser::T_NUM;
 true        return Parser::T_TRUE;

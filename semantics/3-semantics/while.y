@@ -11,7 +11,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -37,6 +37,7 @@
 %left T_LESS T_GR
 %left T_ADD T_SUB
 %left T_MUL T_DIV T_MOD
+%left T_INC T_DEC
 %nonassoc T_NOT
 
 %start program
@@ -377,5 +378,23 @@ expression:
     {
 		$$ = new type(*$2);
         delete $2;
+    }
+|
+    T_ID T_INC
+    {
+        if ( symbol_table.count(*$1) == 0 )
+		{
+			std::stringstream ss;
+			ss << "Undeclared variable: " << *$1 << std::endl;
+			error( ss.str().c_str() );
+		}
+        if(symbol_table[*$1].decl_type != integer)
+		{
+		   std::stringstream ss;
+		   ss << "Non-integer values can't be incremented" << std::endl;
+		   error( ss.str().c_str() );
+		}
+        $$ = new type(integer);
+        delete $1;
     }
 ;
