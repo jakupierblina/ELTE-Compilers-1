@@ -11,7 +11,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -31,6 +31,8 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_GOTO
+%token T_COLON
 
 %left T_OR T_AND
 %left T_EQ
@@ -123,6 +125,29 @@ statement:
 |
     loop
     {
+    }
+|
+    T_ID T_COLON
+    {
+        if( label_table.count(*$1) > 0 )
+		{
+			std::stringstream ss;
+			ss << "Re-declared label: " << *$1 << ".\n" << std::endl;
+			error( ss.str().c_str() );
+		}
+        label_table[*$1] = var_data( d_loc__.first_line, label_type );
+        delete $1;
+    }
+|
+    T_GOTO T_ID
+    {
+        if( label_table.count(*$2) == 0 )
+		{
+			std::stringstream ss;
+			ss << "Undeclared variable: " << *$2 << std::endl;
+			error( ss.str().c_str() );
+		}
+        delete $2;
     }
 ;
 

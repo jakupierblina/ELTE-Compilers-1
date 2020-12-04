@@ -7,6 +7,7 @@ begin
   read(a);
   vanoszto := false;
   i := 2;
+  target:
   while not vanoszto and i < a do
     if a mod i = 0 then
       vanoszto := true;
@@ -14,10 +15,12 @@ begin
     endif
     i := i+1;
   done
+  target:
   if vanoszto then
     write(vanoszto);
     write(oszto);
   else
     write(vanoszto);
+    goto target1
   endif
 end

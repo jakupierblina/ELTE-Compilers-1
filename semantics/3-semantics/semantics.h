@@ -6,7 +6,7 @@
 #include<map>
 #include<sstream>
 
-enum type { integer, boolean };
+enum type { integer, boolean, label_type };
 
 struct var_data {
 	int decl_row;
