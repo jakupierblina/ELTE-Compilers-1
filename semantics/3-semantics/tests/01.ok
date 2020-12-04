@@ -3,14 +3,13 @@ program oszto
   integer i;
   integer oszto;
   boolean vanoszto;
+  time t;
 begin
   read(a);
   vanoszto := false;
   i := 2;
-  for i := true to 10 do
-    a := 3;
-  done
-  while not vanoszto and i < a do
+  t := 12:23;
+  while not vanoszto and i < a and t=10:00 do
     if a mod i = 0 then
       vanoszto := true;
       oszto := i;
@@ -23,4 +22,5 @@ begin
   else
     write(vanoszto);
   endif
+  write(hour(t));
 end
