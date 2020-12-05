@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -36,6 +36,8 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_GOTO;
+%token T_COLON;
 
 %left T_OR T_AND
 %left T_EQ
@@ -153,6 +155,37 @@ statement:
     loop
     {
         $$ = $1;
+    }
+|
+    T_ID T_COLON
+    {
+        if( symbol_table.count(*$1) > 0 )
+        {
+            std::stringstream ss;
+            ss << "Re-declared identifier: " << *$1 << ".\n"
+            << "Line of previous declaration: " << symbol_table[*$1].decl_row << std::endl;
+            error( ss.str().c_str() );
+        }
+        std::string label_name = new_label();
+        symbol_table[*$1] = var_data( d_loc__.first_line, goto_label,  label_name);
+        $$ = new std::string("" +
+                    label_name + ":\n");
+        delete $1;
+    }
+|
+    T_GOTO T_ID T_SEMICOLON
+    {
+        if( symbol_table.count(*$2) == 0 || symbol_table[*$2].decl_type != goto_label)
+        {
+            std::stringstream ss;
+            ss << "Undeclared label: " << *$2 << std::endl;
+            error( ss.str().c_str() );
+        }
+        $$ = new std::string(
+                "jmp " +
+                symbol_table[*$2].label +
+                "\n");
+        delete $2;
     }
 ;
 
