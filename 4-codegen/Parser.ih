@@ -5,6 +5,7 @@
 // $insert class.h
 #include "Parser.h"
 #include <cstdlib>
+#include <string>
 
 
 inline void Parser::error(char const *msg)
@@ -18,19 +19,23 @@ inline int Parser::lex()
 {
     d_loc__.first_line = lexer.lineno();
 	int ret = lexer.yylex();
-    if( ret == T_ID || ret == T_NUM )
+    if( ret == T_ID || ret == T_NUM)
 	{
 		d_val__.name = new std::string(lexer.YYText());
 	}
+    else if (ret == T_STRING_LIT)
+    {
+        d_val__.name = new std::string(std::to_string(lexer.YYLeng() - 2));
+    }
     return ret;
 }
 
-inline void Parser::print()         
+inline void Parser::print()
 {
     print__();           // displays tokens if --print was specified
 }
 
-inline void Parser::exceptionHandler__(std::exception const &exc)         
+inline void Parser::exceptionHandler__(std::exception const &exc)
 {
     throw;              // re-implement to handle exceptions thrown by actions
 }
@@ -43,7 +48,7 @@ std::string Parser::new_label()
 }
 
 
-    // Add here includes that are only required for the compilation 
+    // Add here includes that are only required for the compilation
     // of Parser's sources.
 
 

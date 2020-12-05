@@ -1,23 +1,8 @@
 program oszto
-  integer a;
-  integer i;
-  integer oszto;
-  boolean vanoszto;
+  string b;
 begin
-  read(a);
-  vanoszto := false;
-  i := 2;
-  while not vanoszto and i < a do
-    if a mod i = 0 then
-      vanoszto := true;
-      oszto := i;
-    endif
-    i := i+1;
-  done
-  if vanoszto then
-    write(vanoszto);
-    write(oszto);
-  else
-    write(vanoszto);
-  endif
+  b := "apple";
+  write(length(b));
+  write(length(b+"pie"));
+  write(length(b*3));
 end

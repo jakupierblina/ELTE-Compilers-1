@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -36,6 +36,9 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_STRING
+%token <name> T_STRING_LIT
+%token T_LENGTH;
 
 %left T_OR T_AND
 %left T_EQ
@@ -61,6 +64,8 @@ program:
                 std::cout << v.second.label << ": resd 1" << std::endl;
             if(v.second.decl_type == boolean)
                 std::cout << v.second.label << ": resb 1" << std::endl;
+            if(v.second.decl_type == string_type)
+                std::cout << v.second.label << ": resd 1" << std::endl;
         }
         std::cout << std::endl;
         std::cout << "segment .text" << std::endl;
@@ -106,6 +111,19 @@ declaration:
             error( ss.str().c_str() );
         }
         symbol_table[*$2] = var_data( d_loc__.first_line, boolean, new_label() );
+        delete $2;
+    }
+|
+    T_STRING T_ID T_SEMICOLON
+    {
+        if( symbol_table.count(*$2) > 0 )
+        {
+            std::stringstream ss;
+            ss << "Re-declared variable: " << *$2 << ".\n"
+            << "Line of previous declaration: " << symbol_table[*$2].decl_row << std::endl;
+            error( ss.str().c_str() );
+        }
+        symbol_table[*$2] = var_data( d_loc__.first_line, string_type, new_label() );
         delete $2;
     }
 ;
@@ -179,6 +197,12 @@ assignment:
             $$ = new std::string("" +
                     $3->expr_code +
                     "mov [" + symbol_table[*$1].label + "], al\n");
+        if($3->expr_type == string_type) {
+            $$ = new std::string("" +
+                    $3->expr_code +
+                    "mov [" + symbol_table[*$1].label + "], eax\n");
+        }
+
         delete $1;
         delete $3;
     }
@@ -314,6 +338,12 @@ expression:
         $$ = new expression_descriptor(boolean, "mov al, 0\n");
     }
 |
+    T_STRING_LIT
+    {
+        // std::string string_length = std::to_string($1->length() - 2);
+        $$ = new expression_descriptor(string_type, "mov eax, " + *$1 + "\n");
+    }
+|
     T_ID
     {
         if( symbol_table.count(*$1) == 0 )
@@ -332,23 +362,38 @@ expression:
             $$ = new expression_descriptor(symbol_table[*$1].decl_type,
                     "mov al, [" + symbol_table[*$1].label + "]\n");
         }
+        if(symbol_table[*$1].decl_type == string_type)
+        {
+            $$ = new expression_descriptor(symbol_table[*$1].decl_type,
+                    "mov eax, [" + symbol_table[*$1].label + "]\n");
+        }
         delete $1;
     }
 |
     expression T_ADD expression
     {
-        if($1->expr_type != integer || $3->expr_type != integer)
+        if($1->expr_type == boolean || $1->expr_type != $3->expr_type)
         {
            std::stringstream ss;
            ss << d_loc__.first_line << ": Type error." << std::endl;
            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(integer, "" +
-                $3->expr_code +
-                "push eax\n" +
-                $1->expr_code +
-                "pop ebx\n" +
-                "add eax, ebx\n");
+        if ($1->expr_type == integer && $3->expr_type == integer) {
+            $$ = new expression_descriptor(integer, "" +
+                    $3->expr_code +
+                    "push eax\n" +
+                    $1->expr_code +
+                    "pop ebx\n" +
+                    "add eax, ebx\n");
+        }
+        if ($1->expr_type == string_type && $3->expr_type == string_type) {
+            $$ = new expression_descriptor(string_type,  "" +
+                    $3->expr_code +
+                    "push eax\n" +
+                    $1->expr_code +
+                    "pop ebx\n" +
+                    "add eax, ebx\n");
+        }
         delete $1;
         delete $3;
     }
@@ -373,18 +418,28 @@ expression:
 |
     expression T_MUL expression
     {
-        if($1->expr_type != integer || $3->expr_type != integer)
+        if($1->expr_type == boolean || $3->expr_type != integer)
         {
            std::stringstream ss;
            ss << d_loc__.first_line << ": Type error." << std::endl;
            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(integer, "" +
-                $3->expr_code +
-                "push eax\n" +
-                $1->expr_code +
-                "pop ebx\n" +
-                "mul ebx\n");
+        if($1->expr_type == integer) {
+            $$ = new expression_descriptor(integer, "" +
+                    $3->expr_code +
+                    "push eax\n" +
+                    $1->expr_code +
+                    "pop ebx\n" +
+                    "mul ebx\n");
+        }
+        if($1->expr_type == string_type) {
+            $$ = new expression_descriptor(string_type, "" +
+                    $3->expr_code +
+                    "push eax\n" +
+                    $1->expr_code +
+                    "pop ebx\n" +
+                    "mul ebx\n");
+        }
         delete $1;
         delete $3;
     }
@@ -539,5 +594,18 @@ expression:
     {
         $$ = new expression_descriptor($2->expr_type, "" + $2->expr_code);
         delete $2;
+    }
+|
+    T_LENGTH T_OPEN expression T_CLOSE
+    {
+        if($3->expr_type != string_type)
+        {
+           std::stringstream ss;
+           ss << d_loc__.first_line << ": Type error." << std::endl;
+           error( ss.str().c_str() );
+        }
+        $$ = new expression_descriptor(integer, "" +
+                    $3->expr_code);
+        delete $3;
     }
 ;
