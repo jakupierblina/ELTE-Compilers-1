@@ -4,20 +4,7 @@ program oszto
   integer oszto;
   boolean vanoszto;
 begin
-  read(a);
-  vanoszto := false;
-  i := 2;
-  while not vanoszto and i < a do
-    if a mod i = 0 then
-      vanoszto := true;
-      oszto := i;
-    endif
-    i := i+1;
+  for i := 0 to 5 do
+    write(i);
   done
-  if vanoszto then
-    write(vanoszto);
-    write(oszto);
-  else
-    write(vanoszto);
-  endif
 end

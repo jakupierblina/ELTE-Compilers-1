@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -36,6 +36,8 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_FOR
+%token T_TO
 
 %left T_OR T_AND
 %left T_EQ
@@ -295,6 +297,41 @@ loop:
                 end + ":\n");
         delete $2;
         delete $4;
+    }
+|
+    T_FOR T_ID T_ASSIGN expression T_TO expression T_DO statements T_DONE
+    {
+        if( symbol_table.count(*$2) == 0 )
+        {
+            std::stringstream ss;
+            ss << "Undeclared variable: " << *$2 << std::endl;
+            error( ss.str().c_str() );
+        }
+        if(symbol_table[*$2].decl_type != integer || $4->expr_type != integer || $6->expr_type != integer)
+        {
+           std::stringstream ss;
+           ss << d_loc__.first_line << ": Type error." << std::endl;
+           error( ss.str().c_str() );
+        }
+        std::string start = new_label();
+        std::string end = new_label();
+        $$ = new std::string("" +
+                $4->expr_code +
+                "mov [" + symbol_table[*$2].label + "], eax\n" +
+                start + ":\n" +
+                $6->expr_code +
+                "cmp eax, [" + symbol_table[*$2].label + "]\n" +
+                "jb near " + end + "\n" +
+                *$8 +
+                "mov eax, ["+symbol_table[*$2].label+"]\n" +
+                "add eax, 1\n" +
+                "mov ["+symbol_table[*$2].label+"], eax\n"
+                "jmp " + start + "\n" +
+                end + ":\n");
+        delete $2;
+        delete $4;
+        delete $6;
+        delete $8;
     }
 ;
 
