@@ -12,7 +12,7 @@ begin
       vanoszto := true;
       oszto := i;
     endif
-    i := i+1;
+    i := i++;
   done
   if vanoszto then
     write(vanoszto);

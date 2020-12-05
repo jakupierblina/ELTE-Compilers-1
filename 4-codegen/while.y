@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -42,6 +42,7 @@
 %left T_LESS T_GR
 %left T_ADD T_SUB
 %left T_MUL T_DIV T_MOD
+%left T_INC T_DEC
 %nonassoc T_NOT
 
 %start program
@@ -539,5 +540,45 @@ expression:
     {
         $$ = new expression_descriptor($2->expr_type, "" + $2->expr_code);
         delete $2;
+    }
+|
+    T_ID T_INC
+    {
+        if( symbol_table.count(*$1) == 0 )
+		{
+			std::stringstream ss;
+			ss << "Undeclared variable: " << *$1 << std::endl;
+			error( ss.str().c_str() );
+		}
+        if (symbol_table[*$1].decl_type != integer)
+        {
+            std::stringstream ss;
+			ss << "Non-integer value can not be incremented!" << std::endl;
+			error( ss.str().c_str() );
+        }
+        $$ = new expression_descriptor(integer, "mov eax, ["+symbol_table[*$1].label+"]\n" +
+                                                "add eax, 1\n" +
+                                                "mov ["+symbol_table[*$1].label+"], eax\n");
+        delete $1;
+    }
+|
+    T_ID T_DEC
+    {
+        if( symbol_table.count(*$1) == 0 )
+		{
+			std::stringstream ss;
+			ss << "Undeclared variable: " << *$1 << std::endl;
+			error( ss.str().c_str() );
+		}
+        if (symbol_table[*$1].decl_type != integer)
+        {
+            std::stringstream ss;
+			ss << "Non-integer value can not be decremented!" << std::endl;
+			error( ss.str().c_str() );
+        }
+        $$ = new expression_descriptor(integer, "mov eax, ["+symbol_table[*$1].label+"]\n" +
+                                                "sub eax, 1\n" +
+                                                "mov ["+symbol_table[*$1].label+"], eax\n");
+        delete $1;
     }
 ;
