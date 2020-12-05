@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -36,6 +36,8 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_COLON
+%token T_QUESTIONMARK
 
 %left T_OR T_AND
 %left T_EQ
@@ -539,5 +541,30 @@ expression:
     {
         $$ = new expression_descriptor($2->expr_type, "" + $2->expr_code);
         delete $2;
+    }
+|
+    T_OPEN expression T_QUESTIONMARK expression T_COLON expression T_CLOSE
+    {
+        if($2->expr_type != boolean || $4->expr_type != $6->expr_type)
+        {
+           std::stringstream ss;
+           ss << d_loc__.first_line << ": Type error." << std::endl;
+           error( ss.str().c_str() );
+        }
+
+        std::string elsel = new_label();
+        std::string end = new_label();
+        $$ = new expression_descriptor($4->expr_type, ""+
+                $2->expr_code +
+                "cmp al, 1\n" +
+                "jne near " + elsel + "\n" +
+                $4->expr_code +
+                "jmp " + end + "\n" +
+                elsel + ":\n" +
+                $6->expr_code +
+                end + ":\n");
+        delete $2;
+        delete $4;
+        delete $6;
     }
 ;
