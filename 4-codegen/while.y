@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -41,7 +41,7 @@
 %left T_EQ
 %left T_LESS T_GR
 %left T_ADD T_SUB
-%left T_MUL T_DIV T_MOD
+%left T_POW T_MUL T_DIV T_MOD
 %nonassoc T_NOT
 
 %start program
@@ -539,5 +539,33 @@ expression:
     {
         $$ = new expression_descriptor($2->expr_type, "" + $2->expr_code);
         delete $2;
+    }
+|
+    expression T_POW expression
+    {
+        if($1->expr_type != integer || $3->expr_type != integer)
+        {
+           std::stringstream ss;
+           ss << d_loc__.first_line << ": Type error." << std::endl;
+           error( ss.str().c_str() );
+        }
+        std::string start = new_label();
+        std::string end = new_label();
+        $$=new expression_descriptor(integer,""+
+                $3->expr_code+
+                "mov ecx, eax \n"+
+                $1->expr_code+
+                "mov ebx,eax\n"+
+                "mov eax,1\n"+
+                start+":\n"+
+                "cmp ecx,0\n"+
+                "je near "+end+"\n"+
+                "mul ebx \n"+
+                "sub ecx, 1 \n"+
+                "jmp "+start+"\n"+
+                end+":\n"
+        );
+        delete $1;
+        delete $3;
     }
 ;
