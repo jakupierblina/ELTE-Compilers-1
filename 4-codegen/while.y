@@ -9,14 +9,10 @@
   expression_descriptor *expr_desc;
 }
 
-%type <expr_desc> expression
-%type <code> statement statements assignment read write branch loop
-
-
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -32,11 +28,12 @@
 %token T_ASSIGN
 %token T_OPEN
 %token T_CLOSE
-%token <name> T_NUM
+%token <name>T_NUM
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
 
+%left T_SHIFT
 %left T_OR T_AND
 %left T_EQ
 %left T_LESS T_GR
@@ -45,6 +42,9 @@
 %nonassoc T_NOT
 
 %start program
+
+%type <expr_desc> expression
+%type <code> statement statements assignment read write branch loop
 
 %%
 
@@ -167,16 +167,16 @@ assignment:
         }
         if(symbol_table[*$1].decl_type != $3->expr_type)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
         if($3->expr_type == integer)
-            $$ = new std::string("" +
+            $$ = new std::string(
                     $3->expr_code +
                     "mov [" + symbol_table[*$1].label + "], eax\n");
         if($3->expr_type == boolean)
-            $$ = new std::string("" +
+            $$ = new std::string(
                     $3->expr_code +
                     "mov [" + symbol_table[*$1].label + "], al\n");
         delete $1;
@@ -210,7 +210,7 @@ write:
     {
         if($3->expr_type == integer)
         {
-            $$ = new std::string("" +
+            $$ = new std::string(
                     $3->expr_code +
                     "push eax\n" +
                     "call write_unsigned\n" +
@@ -234,12 +234,12 @@ branch:
     {
         if($2->expr_type != boolean)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
         std::string end = new_label();
-        $$ = new std::string("" +
+        $$ = new std::string(
                 $2->expr_code +
                 "cmp al, 1\n" +
                 "jne near " + end + "\n" +
@@ -253,13 +253,13 @@ branch:
     {
         if($2->expr_type != boolean)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
         std::string elsel = new_label();
         std::string end = new_label();
-        $$ = new std::string("" +
+        $$ = new std::string(
                 $2->expr_code +
                 "cmp al, 1\n" +
                 "jne near " + elsel + "\n" +
@@ -279,13 +279,13 @@ loop:
     {
         if($2->expr_type != boolean)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+             ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
         std::string start = new_label();
         std::string end = new_label();
-        $$ = new std::string("" +
+        $$ = new std::string(
                 start + ":\n" +
                 $2->expr_code +
                 "cmp al, 1\n" +
@@ -335,7 +335,7 @@ expression:
         delete $1;
     }
 |
-    expression T_ADD expression
+    expression T_SHIFT expression
     {
         if($1->expr_type != integer || $3->expr_type != integer)
         {
@@ -343,7 +343,36 @@ expression:
            ss << d_loc__.first_line << ": Type error." << std::endl;
            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(integer, "" +
+        std::string start = new_label();
+        std::string end = new_label();
+        $$=new expression_descriptor(integer,""+
+                $3->expr_code+
+                "mov ecx, eax \n"+
+                $1->expr_code+
+                "mov ebx,eax\n"+
+                "mov eax,1\n"+
+                start+":\n"+
+                "cmp ecx,0\n"+
+                "je near "+end+"\n"+
+                "shr ebx, 1\n"+
+                "sub ecx, 1 \n"+
+                "jmp "+start+"\n"+
+                end+":\n" +
+                "mov eax, ebx\n"
+        );
+        delete $1;
+        delete $3;
+    }
+|
+    expression T_ADD expression
+    {
+        if($1->expr_type != integer || $3->expr_type != integer)
+        {
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
+        }
+        $$ = new expression_descriptor(integer,
                 $3->expr_code +
                 "push eax\n" +
                 $1->expr_code +
@@ -357,11 +386,11 @@ expression:
     {
         if($1->expr_type != integer || $3->expr_type != integer)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(integer, "" +
+        $$ = new expression_descriptor(integer,
                 $3->expr_code +
                 "push eax\n" +
                 $1->expr_code +
@@ -375,11 +404,11 @@ expression:
     {
         if($1->expr_type != integer || $3->expr_type != integer)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(integer, "" +
+        $$ = new expression_descriptor(integer,
                 $3->expr_code +
                 "push eax\n" +
                 $1->expr_code +
@@ -393,11 +422,11 @@ expression:
     {
         if($1->expr_type != integer || $3->expr_type != integer)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(integer, std::string("") +
+        $$ = new expression_descriptor(integer,
                 "xor edx, edx\n" +
                 $3->expr_code +
                 "push eax\n" +
@@ -412,11 +441,11 @@ expression:
     {
         if($1->expr_type != integer || $3->expr_type != integer)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(integer, std::string("") +
+        $$ = new expression_descriptor(integer,
                 "xor edx, edx\n" +
                 $3->expr_code +
                 "push eax\n" +
@@ -432,11 +461,11 @@ expression:
     {
         if($1->expr_type != integer || $3->expr_type != integer)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(boolean, "" +
+        $$ = new expression_descriptor(boolean,
                 $3->expr_code +
                 "push eax\n" +
                 $1->expr_code +
@@ -451,11 +480,11 @@ expression:
     {
         if($1->expr_type != integer || $3->expr_type != integer)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(boolean, "" +
+        $$ = new expression_descriptor(boolean,
                 $3->expr_code +
                 "push eax\n" +
                 $1->expr_code +
@@ -470,11 +499,11 @@ expression:
     {
         if($1->expr_type != $3->expr_type)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(boolean, "" +
+        $$ = new expression_descriptor(boolean,
                 $3->expr_code +
                 "push eax\n" +
                 $1->expr_code +
@@ -489,11 +518,11 @@ expression:
     {
         if($1->expr_type != boolean || $3->expr_type != boolean)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(boolean, "" +
+        $$ = new expression_descriptor(boolean,
                 $3->expr_code +
                 "push ax\n" +
                 $1->expr_code +
@@ -507,11 +536,11 @@ expression:
     {
         if($1->expr_type != boolean || $3->expr_type != boolean)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(boolean, "" +
+        $$ = new expression_descriptor(boolean,
                 $3->expr_code +
                 "push ax\n" +
                 $1->expr_code +
@@ -525,19 +554,19 @@ expression:
     {
         if($2->expr_type != boolean)
         {
-           std::stringstream ss;
-           ss << d_loc__.first_line << ": Type error." << std::endl;
-           error( ss.str().c_str() );
+            std::stringstream ss;
+            ss << d_loc__.first_line << ": Type error." << std::endl;
+            error( ss.str().c_str() );
         }
-        $$ = new expression_descriptor(boolean, "" +
-                $2->expr_code +
-                "xor al, 1\n");
+        $$ = new expression_descriptor(boolean,
+                 $2->expr_code +
+                 "xor al, 1\n");
         delete $2;
     }
 |
     T_OPEN expression T_CLOSE
     {
-        $$ = new expression_descriptor($2->expr_type, "" + $2->expr_code);
+        $$ = new expression_descriptor($2->expr_type, std::string($2->expr_code));
         delete $2;
     }
 ;
