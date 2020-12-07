@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -36,6 +36,7 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_CONST
 
 %left T_OR T_AND
 %left T_EQ
@@ -108,6 +109,34 @@ declaration:
         symbol_table[*$2] = var_data( d_loc__.first_line, boolean, new_label() );
         delete $2;
     }
+|
+    T_CONST T_INTEGER T_ID T_SEMICOLON
+    {
+        if( symbol_table.count(*$3) > 0 )
+        {
+            std::stringstream ss;
+            ss << "Re-declared variable: " << *$3 << ".\n"
+            << "Line of previous declaration: " << symbol_table[*$3].decl_row << std::endl;
+            error( ss.str().c_str() );
+        }
+        symbol_table[*$3] = var_data( d_loc__.first_line, integer, new_label() );
+        const_table[*$3] = false;
+        delete $3;
+    }
+|
+    T_CONST T_BOOLEAN T_ID T_SEMICOLON
+    {
+        if( symbol_table.count(*$3) > 0 )
+        {
+            std::stringstream ss;
+            ss << "Re-declared variable: " << *$3 << ".\n"
+            << "Line of previous declaration: " << symbol_table[*$3].decl_row << std::endl;
+            error( ss.str().c_str() );
+        }
+        symbol_table[*$3] = var_data( d_loc__.first_line, boolean, new_label() );
+        const_table[*$3] = false;
+        delete $3;
+    }
 ;
 
 statements:
@@ -171,6 +200,11 @@ assignment:
            ss << d_loc__.first_line << ": Type error." << std::endl;
            error( ss.str().c_str() );
         }
+        if ( const_table.count(*$1) > 0 && const_table[*$1]){
+            std::stringstream ss;
+            ss << "const qualified literal value can't be changed" << std::endl;
+            error( ss.str().c_str() );
+        }
         if($3->expr_type == integer)
             $$ = new std::string("" +
                     $3->expr_code +
@@ -179,6 +213,9 @@ assignment:
             $$ = new std::string("" +
                     $3->expr_code +
                     "mov [" + symbol_table[*$1].label + "], al\n");
+        if(const_table.count(*$1) > 0){
+            const_table[*$1] = true;
+        }
         delete $1;
         delete $3;
     }

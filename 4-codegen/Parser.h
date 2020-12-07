@@ -10,7 +10,7 @@
 #undef Parser
 class Parser: public ParserBase
 {
-        
+
     public:
         Parser(std::istream& inFile) : lexer( &inFile, &std::cerr ), label_index(0) {}
         int parse();
@@ -19,12 +19,15 @@ class Parser: public ParserBase
         yyFlexLexer lexer;
 
         std::map<std::string,var_data> symbol_table;
+        // store const literals in const_table
+        // if value is false, then it is not assigned yet
+        std::map<std::string,bool> const_table;
         std::string new_label();
         long long label_index;
 
         void error(char const *msg);    // called on (syntax) errors
         int lex();                      // returns the next token from the
-                                        // lexical scanner. 
+                                        // lexical scanner.
         void print();                   // use, e.g., d_token, d_loc
 
     // support functions for parse():
