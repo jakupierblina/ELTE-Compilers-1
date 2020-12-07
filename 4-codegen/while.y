@@ -16,7 +16,7 @@
 %token T_PROGRAM
 %token T_BEGIN
 %token T_END
-%token T_INTEGER 
+%token T_INTEGER
 %token T_BOOLEAN
 %token T_SKIP
 %token T_IF
@@ -36,6 +36,7 @@
 %token T_TRUE
 %token T_FALSE
 %token <name> T_ID
+%token T_RESTART
 
 %left T_OR T_AND
 %left T_EQ
@@ -153,6 +154,11 @@ statement:
     loop
     {
         $$ = $1;
+    }
+|
+    T_RESTART T_SEMICOLON
+    {
+        $$ = new std::string("jmp main\n");
     }
 ;
 
